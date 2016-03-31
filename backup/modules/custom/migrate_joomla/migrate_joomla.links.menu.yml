@@ -1,5 +1,0 @@
-migrate_joomla.config:
-  title: 'Migrate Joomla Configuration'
-  description: 'Configure Migrate Joomla'
-  route_name: migrate_joomla.config
-  parent: system.admin_config_system

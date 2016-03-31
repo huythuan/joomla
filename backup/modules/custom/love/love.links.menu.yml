@@ -1,5 +1,0 @@
-love.config:
-  title: 'Love configuration'
-  description: 'Configure the love system'
-  route_name: love.config
-  parent: system.admin_config_system

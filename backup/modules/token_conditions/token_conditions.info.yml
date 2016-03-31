@@ -1,5 +1,0 @@
-name: token_conditions
-type: module
-description: Conditions based on Tokens
-core: 8.x
-package: Token
