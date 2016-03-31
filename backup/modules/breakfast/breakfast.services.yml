@@ -1,0 +1,4 @@
+services:
+  plugin.manager.breakfast:
+    class: Drupal\breakfast\BreakfastPluginManager
+    parent: default_plugin_manager

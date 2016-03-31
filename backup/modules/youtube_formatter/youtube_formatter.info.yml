@@ -1,0 +1,7 @@
+name: YouTube Formatter
+type: module
+description: 'YouTube embed formatter for the link field.'
+core: 8.x
+dependencies:
+  - field
+package: WebWash

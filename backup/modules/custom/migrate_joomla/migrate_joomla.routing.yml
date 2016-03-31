@@ -1,0 +1,7 @@
+migrate_joomla.config:
+  path: /admin/config/system/migrate-joomla
+  defaults:
+    _form: 'Drupal\migrate_joomla\Form\MigrateJoomlaConfigForm'
+    _title: 'Migrate Joomla Configuration'
+  requirements:
+    _permission: 'configure_migrate_joomla'

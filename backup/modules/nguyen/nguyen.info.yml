@@ -1,0 +1,5 @@
+name: nguyen
+type: module
+description: "Simple example for Drupal services"
+package: Example
+core: 8.x

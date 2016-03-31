@@ -1,0 +1,4 @@
+name: Migrate Joomla
+description: Migrate content from Jooma to Drupal site.
+type: module
+core: 8.x

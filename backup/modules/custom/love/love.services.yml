@@ -1,0 +1,4 @@
+services:
+  love.love_tracker:
+    class: Drupal\love\LoveTracker
+    arguments: ['@state']

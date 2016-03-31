@@ -1,0 +1,8 @@
+joomla_database_host: localhost
+joomla_database_name: joomla
+joomla_database_user: joomla
+joomla_database_pass: joomla
+joomla_database_port: 80
+joomla_prefix: jos_
+joomla_path: http://asmdc.org/members/a09/
+joomla_category: tags

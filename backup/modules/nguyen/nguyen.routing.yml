@@ -1,0 +1,6 @@
+nguyen.nguyen:
+  path: /nguyen
+  defaults:
+    _controller: Drupal\nguyen\Controller\NguyenController:inject
+  requirements:
+    _permission: 'access content'

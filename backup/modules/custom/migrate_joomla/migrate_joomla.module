@@ -1,0 +1,214 @@
+<?php
+use Drupal\Core\Database\Database;
+use Drupal\taxonomy\Entity\Term;
+
+function migrate_joomla_cron() {
+  $joomla_config = \Drupal::configFactory()->getEditable('migrate_joomla.settings');
+
+  $joomla_db = Database::getConnectionInfo('joomla');
+  if (empty($joomla_db)) {
+    $dbs = Database::getConnectionInfo('default');
+    // same engine for two db: Drupal's limit
+    $engine = $dbs['default']['driver'];
+    $joomla_url = array (
+        'database' =>  $joomla_config->get('joomla_database_name'),
+        'username' =>  $joomla_config->get('joomla_database_user'),
+        'password' =>  $joomla_config->get('joomla_database_pass'),
+        'prefix' =>  $joomla_config->get('joomla_prefix'),
+        'host' =>  $joomla_config->get('joomla_database_host'),
+        'port' =>  $joomla_config->get('joomla_database_port'),
+        'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
+        'driver' => $engine,
+    );
+    
+    Database::addConnectionInfo('joomla', 'default', $joomla_url);
+  }
+
+  //joomla_content_save();
+  $vid = $joomla_config->get('joomla_category');
+  $category = array('Press Releases','Video Gallery', 'Photo Album', 'News Articles');
+  joomla_category_save($vid, $category);
+
+}
+
+/**
+ * Save joomla user to Drupal site
+ */
+
+function joomla_user_save() {
+  db_set_active('joomla');
+  $users = db_select('users', 'u')
+  ->fields('u')
+  ->orderBy('u.id', 'DESC')
+  ->execute()
+  ->fetchAll();
+  db_set_active();
+  foreach ($users as $num => $data) {
+    //check username to be unique
+    $duplicate = db_select('users_field_data', 'd')
+    ->fields('d')
+    ->condition('d.name', $data->username)
+    ->execute()
+    ->fetchAll();
+    if (empty($duplicate)) {
+      $user = entity_create('user', array(
+          'name' => $data->username,
+          'mail' => $data->email,
+          'pass' => $data->password,
+          'status' => !$data->block,
+          'created' => strtotime($data->registerDate),
+          'access' => strtotime($data->lastvisitDate),
+      ));
+      $user->enforceIsNew();
+      $res = $user->save();
+      if ($res) {
+        // Write into the joomla -> drupal user mapping table
+        $uid = $user->id();
+        print_r($uid);
+        $juid = $data->id;
+        $password = $data->password;
+        db_insert('joomla_users')
+        ->fields(array('uid' => $uid, 'juid' => $juid, 'password' => $password))
+        ->execute();
+      }
+      // Hook to allow other modules to modify the term
+      //module_invoke_all('joomla', 'user', $account, $data);
+      \Drupal::moduleHandler()->invoke('migrate_joomla', 'user', $account );
+    }    
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/**
+ * Get content from Joomla site and create node for
+ * drupal site.
+ */
+function joomla_content_save() {
+  // set up default category
+  $joomla_default_category_photo = 'photo';
+  $joomla_default_category_video = 'video';
+  $joomla_default_category_news = 'news';
+  // Check imported users
+  joomla_user_save(); 
+  //get content from joomla site.
+  db_set_active('joomla');
+  $q = db_select('content', 'cs');
+  $q->leftJoin('content_frontpage', 'cf', 'cf.content_id = cs.id');
+  $q->Join('categories', 'ct', 'ct.id = cs.catid');
+  $q->fields('cs')
+  ->fields('cf', array('content_id'))
+  ->fields('ct', array('alias'))
+  ->range($offset, 500);
+  $content = $q->execute()->fetchAll();
+  db_set_active();
+  foreach ($content as $num => $data_joomla) {
+    $content_map = db_query('SELECT n.nid, jcontentid FROM {joomla_content} jc JOIN {node} n ON n.nid = jc.nid WHERE jc.jcontentid = :contentid', array(':contentid' => $data_joomla->id))->fetch();
+    if ($content_map) {
+      // Content item has already been imported and update is off
+      continue;
+    }
+    /**
+     * If the content item already exists, but has not been updated
+     * since the last import, skip it
+     */
+    $joomla_changed = strtotime($data_joomla->modified);
+    //if changed is negative drupal will throw an error so:
+    if ($joomla_changed < 0) {
+      $joomla_changed = 0;
+    }
+
+    // create node for photo content type
+    // creating photo
+
+     if ($data_joomla->alias == $joomla_default_category_photo) {
+       //print_r($data_joomla);
+       //module_load_include('inc', 'migrate_joomla', 'migrate_joomla.photo');
+       //$nid = migrate_joomla_create_content_photo($data_joomla, $content_map);
+     }
+
+     // creating video
+     elseif ($data_joomla->alias == $joomla_default_category_video) {
+       //print_r($data_joomla);
+       //module_load_include('inc', 'migrate_joomla', 'migrate_joomla.video');
+       //$nid = migrate_joomla_create_content_video($data_joomla, $content_map);
+     }
+     // creating news
+     if ($data_joomla->alias == $joomla_default_category_news) {
+       //print_r($data_joomla);
+       module_load_include('inc', 'migrate_joomla', 'migrate_joomla.news');
+       $nid = migrate_joomla_create_content_news($data_joomla, $content_map);
+     }
+     
+    if (!$content_map && $nid) {
+      // Created new node, update joomla table
+      /*
+      db_insert('joomla_content')
+      ->fields(array('nid' => $nid, 'jcontentid' => $data_joomla->id))
+      ->execute();
+      */
+    }
+    // Hook to allow other modules to modify the node
+    //module_invoke_all('joomla', 'node', $node, $data_joomla);
+    \Drupal::moduleHandler()->invoke('migrate_joomla', 'node', $account );
+  }
+}
+
+/**
+ * Update category for Drupal site
+ * string $vid: vocabulary id
+ * array $exclude_cat: list of taxonomies not create
+ */
+function joomla_category_save($vid, $exclude_cat)
+{
+  db_set_active('joomla');
+  $categories = db_select('categories', 'c')
+  ->fields('c', array('id', 'title', 'description', 'parent_id'))
+  ->where('(extension = :extension)', array('extension' => 'com_content'))
+  ->orderBy('level', 'ASC')
+  ->execute()
+  ->fetchAll();
+  db_set_active();
+  //Process Joomla categories -> Drupal terms
+  foreach ($categories as $num => $category) {
+    $term_map = db_query("SELECT tid FROM {joomla_categories} WHERE jcategoryid = :jcategoryid", array(':jcategoryid' => $category->id))->fetchField();
+    if ($term_map && !$joomla_update_duplicate) {
+      continue;
+    }
+    $term = NULL;
+    if ($term_map) {
+      $term = db_query('SELECT * FROM {taxonomy_term_data} WHERE tid = :tid', array(':tid' => $term_map))->fetch();
+      if (!$term) {
+        drupal_set_message(t('Unable to load term id @id', array('@id' => $term_map)), 'error');
+        $context['results']['categories_failed']++;
+        continue;
+      }
+    } else {
+      $term = array();
+    }
+    
+    $term['description'] = $category->description;
+    $parent = db_query("SELECT tid FROM {joomla_categories} WHERE jcategoryid = :jcategoryid", array(':jcategoryid' => $category->parent_id))->fetchField();
+
+    if (!$vid) {
+      //drupal_set_message(t('The vocabulary for categories was not configured'), 'error');
+      continue;
+    }
+    if (!in_array($category->title, $exclude_cat)) {
+      $term = entity_create('taxonomy_term', array(
+        'name' => $category->title,
+        'parent' => $parent,
+        'vid' => $vid,
+      ));
+    
+      $res = $term->save();
+      if ($res && !$term_map) {
+        // Create an entry in the category <-> vocabulary map table
+        $tid = $term->id();
+        $jcategoryid = $category->id;
+        db_insert('joomla_categories')
+        ->fields(array('tid' => $tid, 'jcategoryid' => $jcategoryid))
+        ->execute();
+      }
+    }
+  }
+}

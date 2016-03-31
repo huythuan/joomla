@@ -1,0 +1,5 @@
+basic.basic:
+  title: Basic Link
+  description: 'This is a baic link'
+  parent: system.admin_structure
+  route_name: basic.basic

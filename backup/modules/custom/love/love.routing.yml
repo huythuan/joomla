@@ -1,0 +1,22 @@
+love.love:
+  path: /love/{from}/{to}/{count}
+  defaults:
+    _controller: 'Drupal\love\Controller\LoveController::love'
+    _title: 'Love!'
+    count: 0
+  requirements:
+    _permission: 'access content'
+    count: \d+
+love.config:
+  path: /admin/config/system/love
+  defaults:
+    _form: 'Drupal\love\Form\ConfigForm'
+    _title: 'Love configuration'
+  requirements:
+    _permission: 'configure_love'
+love.node:
+  path: /node/{node}/love
+  defaults:
+    _controller: 'Drupal\love\Controller\LoveController::nodeLove'
+  requirements:
+    _permission: 'access content'

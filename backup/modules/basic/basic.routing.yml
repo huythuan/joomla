@@ -1,0 +1,16 @@
+basic.basic:
+  path: '/basic'
+  defaults:
+    _controller: '\Drupal\basic\Controller\BasicController::basic'
+    _title: 'Basic'
+  requirements:
+    _permission: 'access content'
+basic.form:
+  path: '/basic/form'
+  defaults:
+    _form: '\Drupal\basic\Form\BasicForm'
+    _title: 'Basic Form'
+  requirements:
+    _permission: 'access content'
+      
+      

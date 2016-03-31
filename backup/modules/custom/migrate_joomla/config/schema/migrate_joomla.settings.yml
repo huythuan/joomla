@@ -1,0 +1,30 @@
+migrate_joomla.settings:
+  type: mapping
+  label: 'Migrate Joomla module settings'
+  mapping:
+    joomla_database_host:
+      type: text
+      label: 'Default Joomla database host'
+    joomla_database_name:
+      type: text
+      label: 'Default Joomla database'
+    joomla_database_user:
+      type: text
+      label: 'Joomla database user name'
+    joomla_database_pass:
+      type: text
+      label: 'Joomla database password'
+    joomla_database_port:
+      type: text
+      label: 'Joomla database port number'
+    joomla_prefix:
+      type: text
+      label: 'Table Prefix of Joomla'
+    joomla_path:
+      type: text
+      label: 'Path of your Joomla installation'
+    joomla_category:
+      type: text
+      label: 'Default category for drupal'
+    
+    
